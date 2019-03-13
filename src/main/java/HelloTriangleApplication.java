@@ -6,8 +6,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
@@ -30,12 +28,9 @@ class HelloTriangleApplication {
 
     private boolean enableValidationLayers          = true;
 
-    private static List<String> validationLayers;
-
-    static {
-        validationLayers = new ArrayList<>(1);
-        validationLayers.add("VK_LAYER_LUNARG_standard_validation");
-    }
+    private static String[] validationLayers        = {
+            "VK_LAYER_LUNARG_standard_validation"
+    };
 
     void run(boolean enableValidationLayers) {
         this.enableValidationLayers = enableValidationLayers;
@@ -286,7 +281,7 @@ class HelloTriangleApplication {
             vkDeviceCreateInfo.pEnabledFeatures(vkPhysicalDeviceFeatures);
 
             if (enableValidationLayers) {
-                ByteBuffer validationLayer = memUTF8(validationLayers.get(0));
+                ByteBuffer validationLayer = memUTF8(validationLayers[0]);
 
                 PointerBuffer pValidationLayers = stack.mallocPointer(1);
                 pValidationLayers.put(validationLayer);
