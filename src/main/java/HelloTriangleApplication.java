@@ -292,7 +292,8 @@ class HelloTriangleApplication {
                 memFree(validationLayer);
             }
 
-            PointerBuffer pGraphicsQueue = stack.mallocPointer(1);
+            PointerBuffer pGraphicsQueue = stack.mallocPointer(1); // in the C++ tutorial this is VkQueue struct and
+            // is kept as a class member
 
             if (vkCreateDevice(this.physicalDevice, vkDeviceCreateInfo, null, pGraphicsQueue) != VK_SUCCESS) {
                 throw new AssertionError("Failed to create a logical device!");
