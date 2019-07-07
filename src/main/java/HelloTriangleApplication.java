@@ -135,7 +135,7 @@ class HelloTriangleApplication {
                             public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData) {
                                 VkDebugUtilsMessengerCallbackDataEXT callbackDataEXT = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
 
-                                System.err.println("validation layer: " + callbackDataEXT.pMessageString()); // need a util class to translate these ints into messages
+                                System.err.println("validation layer: " + callbackDataEXT.pMessageString());
 
                                 return VK_FALSE;
                             }
@@ -294,9 +294,7 @@ class HelloTriangleApplication {
                 memFree(validationLayer);
             }
 
-            PointerBuffer pGraphicsQueue = stack.mallocPointer(1); // in the C++ tutorial this is VkQueue struct and
-            // is kept as a class member
-
+            PointerBuffer pGraphicsQueue = stack.mallocPointer(1);
             if (vkCreateDevice(this.physicalDevice, vkDeviceCreateInfo, null, pGraphicsQueue) != VK_SUCCESS) {
                 throw new AssertionError("Failed to create a logical device!");
             }
