@@ -133,7 +133,9 @@ class HelloTriangleApplication {
                         .pfnUserCallback(new VkDebugUtilsMessengerCallbackEXT() {
                             @Override
                             public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData) {
-                                System.err.println("validation layer: " + pCallbackData); // need a util class to translate these ints into messages
+                                VkDebugUtilsMessengerCallbackDataEXT callbackDataEXT = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
+
+                                System.err.println("validation layer: " + callbackDataEXT.pMessageString()); // need a util class to translate these ints into messages
 
                                 return VK_FALSE;
                             }
