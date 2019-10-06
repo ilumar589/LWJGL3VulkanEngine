@@ -86,14 +86,23 @@ class HelloTriangleApplication {
         }
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            final ByteBuffer applicationName = memUTF8("Hello Triangle!");
-            final ByteBuffer engineName = memUTF8("No engine!");
+            /// Create application and engine name on stack - char* c type strings
+            final String applicationName = "Hello Triangle!";
+            final String engineName = "No engine!";
+
+            final ByteBuffer nativeApplicationName = stack.malloc(applicationName.getBytes().length + 1); // + 1 for null termination \0
+            memUTF8(applicationName, true, nativeApplicationName);
+
+            final ByteBuffer nativeEngineName = stack.malloc(engineName.getBytes().length + 1); // + 1 for null termination \0
+            memUTF8(engineName, true, nativeEngineName);
+            /// Create application and engine name on stack -- END
+
 
             VkApplicationInfo applicationInfo = VkApplicationInfo.callocStack(stack)
                 .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
-                .pApplicationName(applicationName)
+                .pApplicationName(nativeApplicationName)
                 .applicationVersion(VK_MAKE_VERSION(1, 0, 0))
-                .pEngineName(engineName)
+                .pEngineName(nativeEngineName)
                 .engineVersion(VK_MAKE_VERSION(1, 0, 0))
                 .apiVersion(VK_API_VERSION_1_0);
 
@@ -111,14 +120,12 @@ class HelloTriangleApplication {
             int vkResult = vkCreateInstance(createInfo, null, pInstance);
 
             if (vkResult != VK_SUCCESS) {
+                memFree(enabledExtensionNames); // free dangling pointer buffer in case of error
                 throw new AssertionError("Failed to create vk instance!");
             }
 
             vkInstance = new VkInstance(pInstance.get(0), createInfo);
 
-            ////////
-            memFree(applicationName);
-            memFree(engineName);
             memFree(enabledExtensionNames);
         }
     }
@@ -134,9 +141,7 @@ class HelloTriangleApplication {
                             @Override
                             public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData) {
                                 VkDebugUtilsMessengerCallbackDataEXT callbackDataEXT = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
-
                                 System.err.println("validation layer: " + callbackDataEXT.pMessageString());
-
                                 return VK_FALSE;
                             }
                         });
@@ -177,18 +182,17 @@ class HelloTriangleApplication {
             throw new AssertionError("Failed to find list of required vulkan extensions");
         }
 
+        /* These byte buffer representations of strings are added to the pointer buffer and
+              the memory is released when the pointer buffer is released
+        */
         final ByteBuffer VK_EXT_DEBUG_REPORT_EXTENSION = memUTF8(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         final ByteBuffer VK_EXT_DEBUG_UTILS_EXTENSION = memUTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-        PointerBuffer ppEnabledExtensionNames = memAllocPointer(requiredInstanceExtensions.remaining() + 2);
+        final PointerBuffer ppEnabledExtensionNames = memAllocPointer(requiredInstanceExtensions.remaining() + 2);
         ppEnabledExtensionNames.put(requiredInstanceExtensions);
         ppEnabledExtensionNames.put(VK_EXT_DEBUG_REPORT_EXTENSION);
         ppEnabledExtensionNames.put(VK_EXT_DEBUG_UTILS_EXTENSION);
         ppEnabledExtensionNames.flip();
-
-        //////
-        memFree(VK_EXT_DEBUG_REPORT_EXTENSION);
-        memFree(VK_EXT_DEBUG_UTILS_EXTENSION);
 
         return ppEnabledExtensionNames;
     }
