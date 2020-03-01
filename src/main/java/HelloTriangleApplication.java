@@ -1,6 +1,7 @@
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
+import utils.CompoundBuffers;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -106,12 +107,12 @@ class HelloTriangleApplication {
                 .engineVersion(VK_MAKE_VERSION(1, 0, 0))
                 .apiVersion(VK_API_VERSION_1_0);
 
-            final PointerBuffer enabledExtensionNames = getRequiredExtensions();
+            final CompoundBuffers compoundBuffers = getRequiredExtensions();
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack)
                 .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
                 .pApplicationInfo(applicationInfo)
-                .ppEnabledExtensionNames(enabledExtensionNames);
+                .ppEnabledExtensionNames(compoundBuffers.pointerBuffer);
 
             logExtensionNames(createInfo);
 
@@ -120,13 +121,17 @@ class HelloTriangleApplication {
             int vkResult = vkCreateInstance(createInfo, null, pInstance);
 
             if (vkResult != VK_SUCCESS) {
-                memFree(enabledExtensionNames); // free dangling pointer buffer in case of error
+                memFree(compoundBuffers.aStringRepresentation);
+                memFree(compoundBuffers.anotherStringRepresentation);
+                memFree(compoundBuffers.pointerBuffer); // free dangling pointer buffer in case of error
                 throw new AssertionError("Failed to create vk instance!");
             }
 
             vkInstance = new VkInstance(pInstance.get(0), createInfo);
 
-            memFree(enabledExtensionNames);
+            memFree(compoundBuffers.aStringRepresentation);
+            memFree(compoundBuffers.anotherStringRepresentation);
+            memFree(compoundBuffers.pointerBuffer);
         }
     }
 
@@ -175,7 +180,12 @@ class HelloTriangleApplication {
         }
     }
 
-    private PointerBuffer getRequiredExtensions() {
+    // this is nasty without anonymous tuples. Creating classes just to make combined pointer returns
+    // so as to free memory later. I guess a supplier lambda should work here but I can't do dynamic number of
+    // return parameters so I guess the OO approach would be to move all allocation references to the class and free
+    // them all with one closing function. Or because in C/C++ you think more about these things when passing stuff to/from
+    // functions the pointers should be outside the function and passed to it so as to free them after
+    private CompoundBuffers getRequiredExtensions() {
         PointerBuffer requiredInstanceExtensions = glfwGetRequiredInstanceExtensions();
 
         if (requiredInstanceExtensions == null) {
@@ -194,7 +204,7 @@ class HelloTriangleApplication {
         ppEnabledExtensionNames.put(VK_EXT_DEBUG_UTILS_EXTENSION);
         ppEnabledExtensionNames.flip();
 
-        return ppEnabledExtensionNames;
+        return new CompoundBuffers(ppEnabledExtensionNames, VK_EXT_DEBUG_REPORT_EXTENSION, VK_EXT_DEBUG_UTILS_EXTENSION);
     }
 
     private boolean checkValidationLayerSupport() {
